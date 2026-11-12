@@ -19,7 +19,17 @@
     { id: "femme-fatale", name: "Femme Fatale" },
   ];
   const SOON = "Kill Democracy";
-  const img = (id, side) => `assets/img/${id}-${side}.png`;
+  const img = (id, side) => `assets/img/${id}-${side}.webp`;
+  // Junta vários eventos de ponteiro num único trabalho por quadro.
+  const perFrame = (fn) => {
+    let queued = false, last;
+    return (e) => {
+      last = e;
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => { queued = false; fn(last); });
+    };
+  };
   const star = '<svg viewBox="0 0 100 100" aria-hidden="true"><use href="#star"/></svg>';
   const live = $("#live");
   const say = (t) => { live.textContent = ""; requestAnimationFrame(() => { live.textContent = t; }); };
@@ -45,6 +55,7 @@
     site.inert = false;
     document.body.classList.remove("is-gated", "is-entering");
     fitRows();
+    wake();
     if (focus) $("#heroTitle").focus({ preventScroll: true });
   }
 
@@ -149,13 +160,14 @@
     enter(kb ? innerWidth / 2 : e.clientX, kb ? innerHeight / 2 : e.clientY);
   });
   if (fine && !reduce) {
-    hit.addEventListener("pointermove", (e) => {
+    const glow = $(".gate__glow");
+    hit.addEventListener("pointermove", perFrame((e) => {
       const px = e.clientX / innerWidth, py = e.clientY / innerHeight;
-      hit.style.setProperty("--mx", px * 100 + "%");
-      hit.style.setProperty("--my", py * 100 + "%");
+      glow.style.setProperty("--gx", e.clientX + "px");
+      glow.style.setProperty("--gy", e.clientY + "px");
       mark.style.setProperty("--ry", (px - 0.5) * 34 + "deg");
       mark.style.setProperty("--rx", (0.5 - py) * 26 + "deg");
-    });
+    }));
   }
   $("#backToGate").addEventListener("click", () => {
     scrollTo({ top: 0, behavior: "instant" });
@@ -168,6 +180,7 @@
   /* ---------- Título que cabe na coluna e reage ao ponteiro ---------- */
   const rows = $$(".fit");
   rows.forEach((row) => { row.innerHTML = [...row.textContent].map((c) => `<span class="char">${c}</span>`).join(""); });
+  let charBoxes = [];
   function fitRows() {
     rows.forEach((row) => {
       const target = row.parentElement.clientWidth;
@@ -175,32 +188,50 @@
       row.style.fontSize = "100px";
       row.style.fontSize = (100 * target) / row.scrollWidth + "px";
     });
+    charBoxes = [];
+    measureMarquees();
   }
-  addEventListener("resize", fitRows);
+  addEventListener("resize", perFrame(fitRows));
   document.fonts.ready.then(fitRows);
   const chars = $$(".char");
-  function heat(x, y) {
-    chars.forEach((c) => {
-      const r = c.getBoundingClientRect();
-      const d = Math.hypot(x - (r.left + r.width / 2), (y - (r.top + r.height / 2)) * 0.6);
-      c.style.setProperty("--s", (1 + 0.32 * Math.max(0, 1 - d / (innerWidth * 0.17))).toFixed(3));
+  const hero = $(".hero");
+  // Centros das letras medidos uma vez por entrada no hero, não a cada movimento do mouse.
+  function measureChars() {
+    charBoxes = chars.map((c) => {
+      const r = c.getBoundingClientRect(), s = parseFloat(c.style.getPropertyValue("--s")) || 1;
+      return { x: r.left + r.width / 2, y: r.bottom - r.height / s / 2 + scrollY };
     });
   }
-  if (!reduce) {
-    const hero = $(".hero");
-    hero.addEventListener("pointermove", (e) => heat(e.clientX, e.clientY));
-    hero.addEventListener("pointerleave", () => chars.forEach((c) => c.style.setProperty("--s", 1)));
+  function heat(e) {
+    if (!charBoxes.length) measureChars();
+    const reach = innerWidth * 0.17;
+    chars.forEach((c, i) => {
+      const b = charBoxes[i], d = Math.hypot(e.clientX - b.x, (e.clientY + scrollY - b.y) * 0.6);
+      const s = (1 + 0.32 * Math.max(0, 1 - d / reach)).toFixed(2);
+      if (c._s !== s) { c._s = s; c.style.setProperty("--s", s); }
+    });
+  }
+  if (!reduce && fine) {
+    hero.addEventListener("pointerenter", () => { hero.classList.add("is-hot"); measureChars(); });
+    hero.addEventListener("pointermove", perFrame(heat));
+    hero.addEventListener("pointerleave", () => {
+      hero.classList.remove("is-hot");
+      chars.forEach((c) => { c._s = "1"; c.style.setProperty("--s", 1); });
+    });
   }
 
   /* ---------- Inclinação 3D ---------- */
   function tilt(area, el, max) {
     if (!fine || reduce) return;
-    area.addEventListener("pointermove", (e) => {
-      const r = area.getBoundingClientRect();
+    let r = null;
+    area.addEventListener("pointerenter", () => { r = area.getBoundingClientRect(); });
+    area.addEventListener("pointermove", perFrame((e) => {
+      if (!r) r = area.getBoundingClientRect();
       el.style.setProperty("--ry", ((e.clientX - r.left) / r.width - 0.5) * max + "deg");
       el.style.setProperty("--rx", (0.5 - (e.clientY - r.top) / r.height) * max + "deg");
-    });
-    area.addEventListener("pointerleave", () => { el.style.setProperty("--ry", "0deg"); el.style.setProperty("--rx", "0deg"); });
+    }));
+    area.addEventListener("pointerleave", () => { r = null; el.style.setProperty("--ry", "0deg"); el.style.setProperty("--rx", "0deg"); });
+    addEventListener("scroll", () => { r = null; }, { passive: true });
   }
   tilt($(".hero"), $(".hero__mark"), 30);
   tilt($("#sobre"), $("#aboutMark"), 26);
@@ -211,28 +242,51 @@
     const track = $(".marquee__track", el);
     const set = words.map((w) => `<span class="marquee__item">${w}${star}</span>`).join("");
     track.innerHTML = set.repeat(el.dataset.words ? 8 : 4);
-    return { track, x: 0, n: el.dataset.words ? 8 : 4, dir: el.dataset.words ? 1 : -1 };
+    return { el, track, x: 0, n: el.dataset.words ? 8 : 4, dir: el.dataset.words ? 1 : -1, unit: 0, seen: false };
   });
-  let lastY = scrollY, vel = 0;
+  // Largura de um ciclo da faixa: medida só quando fonte ou tela mudam, nunca a cada quadro.
+  function measureMarquees() { marquees.forEach((m) => { m.unit = m.track.scrollWidth / m.n; }); }
+
+  let lastY = scrollY, vel = 0, looping = false, aboutSeen = false, aboutTop = 0, aboutH = 1;
   const aboutMark = $("#aboutMark"), about = $("#sobre");
+  function measureAbout() { aboutTop = about.offsetTop; aboutH = about.offsetHeight; }
+  // O laço só roda enquanto há faixa ou monograma na tela e o site está aberto.
+  function wake() {
+    if (looping || reduce || document.hidden || site.inert) return;
+    if (!aboutSeen && !marquees.some((m) => m.seen)) return;
+    looping = true;
+    requestAnimationFrame(loop);
+  }
   function loop() {
-    const dy = scrollY - lastY; lastY = scrollY;
+    if (document.hidden || site.inert || (!aboutSeen && !marquees.some((m) => m.seen))) { looping = false; return; }
+    const y = scrollY, dy = y - lastY; lastY = y;
     vel += (dy - vel) * 0.12;
     marquees.forEach((m) => {
-      const unit = m.track.scrollWidth / m.n;
-      if (!unit) return;
+      if (!m.seen) return;
+      if (!m.unit) m.unit = m.track.scrollWidth / m.n;
+      if (!m.unit) return;
       m.x += m.dir * (0.7 + Math.abs(vel) * 0.55) * (vel < -0.5 ? -1 : 1);
-      m.x = ((m.x % unit) - unit) % unit;
-      m.track.style.transform = `translate3d(${m.x}px,0,0)`;
+      m.x = ((m.x % m.unit) - m.unit) % m.unit;
+      m.track.style.transform = `translate3d(${m.x.toFixed(1)}px,0,0)`;
     });
-    const r = about.getBoundingClientRect();
-    if (r.top < innerHeight && r.bottom > 0) {
-      const p = (innerHeight - r.top) / (innerHeight + r.height);
-      aboutMark.style.setProperty("--spin", ((p - 0.5) * 50).toFixed(2) + "deg");
+    if (aboutSeen) {
+      const p = (y + innerHeight - aboutTop) / (innerHeight + aboutH);
+      aboutMark.style.setProperty("--spin", ((p - 0.5) * 50).toFixed(1) + "deg");
     }
     requestAnimationFrame(loop);
   }
-  if (!reduce) requestAnimationFrame(loop);
+  const seenIo = new IntersectionObserver((entries) => {
+    entries.forEach((en) => {
+      const m = marquees.find((x) => x.el === en.target);
+      if (m) m.seen = en.isIntersecting;
+      else { aboutSeen = en.isIntersecting; if (aboutSeen) measureAbout(); }
+    });
+    wake();
+  });
+  marquees.forEach((m) => seenIo.observe(m.el));
+  seenIo.observe(about);
+  document.addEventListener("visibilitychange", wake);
+  addEventListener("resize", perFrame(measureAbout));
 
   /* ---------- Drop ---------- */
   const rack = $("#rack");
@@ -331,7 +385,7 @@
     count.textContent = total;
     list.innerHTML = bag.map((it, i) => `
       <li class="item" data-i="${i}">
-        <div class="item__img"><img src="${img(it.id, "front")}" width="84" height="84" alt=""></div>
+        <div class="item__img"><img src="${img(it.id, "front-thumb")}" width="84" height="84" alt=""></div>
         <p class="item__name">${nameOf(it.id)}</p>
         <p class="item__meta">Tamanho ${it.size}. Preço no lançamento.</p>
         <div class="item__row">
@@ -396,19 +450,23 @@
   /* ---------- Cursor de estrela e faíscas ---------- */
   if (fine && !reduce) {
     const cur = $("#cursor");
-    let tx = -100, ty = -100, cx = tx, cy = ty;
+    let tx = -100, ty = -100, cx = tx, cy = ty, following = false, hot = null, on = null;
     root.classList.add("has-cursor");
+    // O cursor só é redesenhado enquanto ainda está alcançando o ponteiro.
+    function follow() {
+      cx += (tx - cx) * 0.35; cy += (ty - cy) * 0.35;
+      if (Math.abs(tx - cx) < 0.3 && Math.abs(ty - cy) < 0.3) { cx = tx; cy = ty; following = false; }
+      cur.style.transform = `translate3d(${cx.toFixed(1)}px,${cy.toFixed(1)}px,0)`;
+      if (following) requestAnimationFrame(follow);
+    }
     addEventListener("pointermove", (e) => {
       tx = e.clientX; ty = e.clientY;
-      cur.classList.toggle("is-on", !dlg.open);
-      cur.classList.toggle("is-hot", !!e.target.closest("a, button, label, .next__list li"));
-    });
-    document.addEventListener("pointerleave", () => cur.classList.remove("is-on"));
-    (function follow() {
-      cx += (tx - cx) * 0.3; cy += (ty - cy) * 0.3;
-      cur.style.transform = `translate3d(${cx}px,${cy}px,0)`;
-      requestAnimationFrame(follow);
-    })();
+      const nowOn = !dlg.open, nowHot = !!e.target.closest("a, button, label, .next__list li");
+      if (nowOn !== on) { on = nowOn; cur.classList.toggle("is-on", on); }
+      if (nowHot !== hot) { hot = nowHot; cur.classList.toggle("is-hot", hot); }
+      if (!following) { following = true; requestAnimationFrame(follow); }
+    }, { passive: true });
+    document.addEventListener("pointerleave", () => { on = false; cur.classList.remove("is-on"); });
   }
   if (!reduce) {
     addEventListener("pointerdown", (e) => {
