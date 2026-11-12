@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bully Clothing | Streetwear de Juiz de Fora</title>
+<meta name="description" content="Bully Clothing: streetwear nacional de Juiz de Fora, MG. Bully Brutalism. Drop 01 em breve.">
+<meta name="theme-color" content="#000000">
+<link rel="preload" href="assets/fonts/league-gothic-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/img/monogram-red.png" as="image">
+<link rel="icon" type="image/png" href="assets/img/monogram-red.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="is-gated">
+
+<svg width="0" height="0" class="defs" aria-hidden="true" focusable="false">
+  <symbol id="star" viewBox="0 0 100 100"><path d="M50 2 61 38 98 38 68 60 79 97 50 75 21 97 32 60 2 38 39 38Z"/></symbol>
+</svg>
+
+<div class="gate" id="gate">
+  <button class="gate__hit" type="button" aria-label="Entrar no site da Bully Clothing">
+    <span class="gate__glow" aria-hidden="true"></span>
+    <span class="gate__float">
+      <img class="gate__mark" src="assets/img/monogram-red.png" width="1080" height="900" alt="">
+    </span>
+    <span class="gate__hint" aria-hidden="true">Clique para entrar</span>
+  </button>
+</div>
+
+<div class="scene" id="scene" hidden>
+  <p class="scene__word" id="sceneWord" aria-hidden="true"></p>
+  <button class="link scene__skip" type="button" id="sceneSkip">Pular</button>
+</div>
+<canvas class="scene__fx" id="sceneFx" hidden aria-hidden="true"></canvas>
+
+<div class="site" id="site" inert>
+  <header class="top">
+    <a class="top__mark" href="#abertura" aria-label="Bully Clothing, início">
+      <img src="assets/img/monogram-red.png" width="1080" height="900" alt="">
+    </a>
+    <nav class="top__nav" aria-label="Principal">
+      <a href="#drop">Drop 01</a>
+      <a href="#sobre">Sobre nós</a>
+    </nav>
+    <button class="top__bag" type="button" id="bagOpen" aria-haspopup="dialog">
+      Sacola <span class="top__count" id="bagCount">0</span>
+    </button>
+  </header>
+
+  <main>
+    <section class="hero" id="abertura">
+      <h1 class="hero__title" id="heroTitle" tabindex="-1" aria-label="Bully Brutalism">
+        <span class="fit hero__row hero__row--a" aria-hidden="true">BULLY</span>
+        <span class="fit hero__row hero__row--b" aria-hidden="true">BRUTALISM</span>
+      </h1>
+      <div class="hero__side">
+        <div class="hero__markwrap" id="heroMarkWrap">
+          <img class="hero__mark tilt" src="assets/img/monogram-chrome.png" width="1290" height="1000" alt="Monograma B com estrela da Bully Clothing, cromado">
+        </div>
+        <p class="hero__lede">Streetwear nacional de Juiz de Fora, Minas Gerais. Camisas com temas fortes e críticas sociais, longe de qualquer marca da cena.</p>
+        <a class="btn" href="#drop">Ver o Drop 01</a>
+      </div>
+    </section>
+
+    <div class="marquee" data-marquee aria-hidden="true"><div class="marquee__track"></div></div>
+
+    <section class="drop" id="drop">
+      <div class="drop__head">
+        <h2 class="drop__title">Drop 01</h2>
+        <p class="drop__note">Sete camisas. Preço e data de lançamento ainda não foram divulgados. Passe o mouse ou toque na peça para ver as costas.</p>
+      </div>
+      <div class="rack" id="rack"></div>
+    </section>
+
+    <section class="about" id="sobre">
+      <div class="about__text">
+        <h2 class="neon about__title" id="aboutTitle">Sobre nós</h2>
+        <p>Fundada em setembro de 2026 por Gustavo Salfer, a Bully Clothing é uma marca nacional de streetwear, vinda de Juiz de Fora, Minas Gerais. Buscamos algo fora do padrão das marcas de roupa genéricas, com um estilo quase original: <strong>“Bully Brutalism”</strong>. Camisas com temas fortes, críticas sociais e temáticas longe de qualquer marca da cena.</p>
+        <p>Futuramente, pretendemos expandir a Bully para algo além de apenas camisas, com foco em diversas áreas do entretenimento moderno, como música, artes plásticas e audiovisual. Buscando sempre o melhor para os nossos clientes, e o maior conforto, a Bully agradece toda a confiança e preferência.</p>
+        <p class="motto"><span>Fly High.</span><span>Dream Higher.</span></p>
+      </div>
+      <div class="about__markwrap" id="aboutMarkWrap">
+        <img class="about__mark tilt" id="aboutMark" src="assets/img/monogram-chrome.png" width="1290" height="1000" alt="" loading="lazy">
+      </div>
+      <div class="next">
+        <h3 class="next__title">Depois das camisas</h3>
+        <ul class="next__list">
+          <li>Música</li>
+          <li>Artes plásticas</li>
+          <li>Audiovisual</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="marquee marquee--foot" data-marquee data-words="Fly High|Dream Higher" aria-hidden="true"><div class="marquee__track"></div></div>
+    <div class="foot__row">
+      <p>Bully Clothing. Juiz de Fora, Minas Gerais. Desde setembro de 2026.</p>
+      <p class="foot__draft">Esboço do site: preços, data do drop e pagamento ainda não definidos.</p>
+      <button class="link" type="button" id="backToGate">Voltar à capa</button>
+    </div>
+  </footer>
+</div>
+
+<dialog class="bag" id="bag" aria-labelledby="bagTitle">
+  <div class="bag__panel">
+    <div class="bag__head">
+      <h2 class="bag__title" id="bagTitle">Sacola</h2>
+      <button class="link" type="button" id="bagClose">Fechar</button>
+    </div>
+    <ul class="bag__list" id="bagList"></ul>
+    <p class="bag__empty" id="bagEmpty">Sua sacola está vazia. Escolha um tamanho e ponha uma camisa aqui.</p>
+    <div class="bag__foot">
+      <p class="bag__total"><span>Total</span><span>Divulgado no lançamento</span></p>
+      <button class="btn btn--block" type="button" id="checkout">Fechar pedido</button>
+      <p class="bag__msg" id="checkoutMsg" role="status"></p>
+    </div>
+  </div>
+</dialog>
+
+<div class="cursor" id="cursor" aria-hidden="true"><svg viewBox="0 0 100 100"><use href="#star"/></svg></div>
+<p class="sr" id="live" role="status" aria-live="polite"></p>
+
+<script src="app.js" defer></script>
+</body>
+</html>
